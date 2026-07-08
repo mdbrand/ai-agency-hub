@@ -114,10 +114,50 @@ const SYSTEM_PROMPT_BASE = `You are Athena, Rob's chief-of-staff assistant for M
 
 Formatting rules, important:
 - Write plain, natural chat replies. Never prefix your reply with a Slack user ID, mention token, or any bracketed/angle-bracketed ID like "[U12345]" or "<@U12345>" — just answer directly, no ID tags of any kind.
-- You only have exactly two tools: create_task and list_pending. Never simulate, role-play, or fake-format a call to a terminal, shell, or any other tool you don't have — if you don't have a real way to answer something (e.g. you don't have a live clock), just say so plainly instead of inventing fake command output.`;
+- You only have exactly two tools: create_task and list_pending. Never simulate, role-play, or fake-format a call to a terminal, shell, or any other tool you don't have — if you don't have a real way to answer something (e.g. you don't have a live clock), just say so plainly instead of inventing fake command output.
+- When Rob attaches photos (business cards, screenshots, documents), they are included in the message — read them directly and transcribe exactly what you see. Never invent details that aren't legible; say when something is unreadable.`;
 
 function stripSlackMentions(text) {
   return text.replace(/<@[A-Z0-9]+>/g, '').trim();
+}
+
+const MAX_IMAGES = 4;
+const MAX_IMAGE_BYTES = 4.5 * 1024 * 1024;
+const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
+// Downloads image attachments from Slack (requires the files:read bot scope)
+// and converts them to Anthropic image blocks. Prefers Slack's 1024px JPEG
+// thumbnail — smaller payloads, and it sidesteps unsupported formats like
+// HEIC from iPhone photos.
+async function fetchSlackImages(files) {
+  const blocks = [];
+  for (const f of files ?? []) {
+    if (blocks.length >= MAX_IMAGES) break;
+    if (!f.mimetype?.startsWith('image/')) continue;
+    const url = f.thumb_1024 ?? f.url_private;
+    if (!url) continue;
+    try {
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}` } });
+      const type = res.headers.get('content-type')?.split(';')[0] ?? f.mimetype;
+      if (!res.ok || !type.startsWith('image/')) {
+        console.error(`[files] download failed for ${f.name}: HTTP ${res.status} type=${type}`);
+        continue;
+      }
+      if (!SUPPORTED_IMAGE_TYPES.has(type)) {
+        console.error(`[files] skipping ${f.name}: unsupported type ${type}`);
+        continue;
+      }
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.length > MAX_IMAGE_BYTES) {
+        console.error(`[files] skipping ${f.name}: too large (${buf.length} bytes)`);
+        continue;
+      }
+      blocks.push({ type: 'image', source: { type: 'base64', media_type: type, data: buf.toString('base64') } });
+    } catch (err) {
+      console.error(`[files] error fetching ${f.name}: ${err.message}`);
+    }
+  }
+  return blocks;
 }
 
 const channelState = new Map(); // channel -> { messages: [], lastTs: number }
@@ -134,9 +174,9 @@ function getHistory(channel) {
   return state;
 }
 
-async function runAthenaTurn(channel, userText, messageTs) {
+async function runAthenaTurn(channel, userContent, messageTs) {
   const state = getHistory(channel);
-  state.messages.push({ role: 'user', content: userText });
+  state.messages.push({ role: 'user', content: userContent });
 
   let messages = state.messages;
   let finalText = '';
@@ -177,7 +217,15 @@ async function runAthenaTurn(channel, userText, messageTs) {
     messages = [...messages, { role: 'user', content: toolResults }];
   }
 
-  state.messages = messages.slice(-MAX_HISTORY_MESSAGES);
+  // Keep history text-only: replace image blocks with placeholders so
+  // follow-up turns don't re-send megabytes of base64 every 90 seconds.
+  // Athena's transcription of the image lives in her reply text anyway.
+  state.messages = messages.slice(-MAX_HISTORY_MESSAGES).map((m) => ({
+    ...m,
+    content: Array.isArray(m.content)
+      ? m.content.map((b) => (b.type === 'image' ? { type: 'text', text: '[image was attached here and already analyzed]' } : b))
+      : m.content,
+  }));
   return finalText || "(no reply generated — check the daemon logs)";
 }
 
@@ -198,16 +246,21 @@ app.message(async ({ message, say }) => {
     console.log('[skip] bot message');
     return;
   }
-  if (!message.text) {
-    console.log('[skip] no text');
+  if (!message.text && !message.files?.length) {
+    console.log('[skip] no text or files');
     return;
   }
 
   try {
-    const cleanText = stripSlackMentions(message.text);
+    const cleanText = stripSlackMentions(message.text ?? '');
     const threadTs = message.thread_ts || message.ts;
+    const imageBlocks = await fetchSlackImages(message.files);
+    if (imageBlocks.length) console.log(`[files] attached ${imageBlocks.length} image(s) to the message`);
+    const content = imageBlocks.length
+      ? [...imageBlocks, { type: 'text', text: cleanText || 'Please analyze the attached image(s).' }]
+      : cleanText;
     console.log('[processing] calling Anthropic...');
-    const reply = await runAthenaTurn(`${message.channel}:${threadTs}`, cleanText, message.ts);
+    const reply = await runAthenaTurn(`${message.channel}:${threadTs}`, content, message.ts);
     console.log(`[reply] ${JSON.stringify(reply)}`);
     await say({ text: reply, thread_ts: threadTs });
     console.log('[posted] reply sent to Slack');
@@ -220,5 +273,5 @@ app.message(async ({ message, say }) => {
 
 (async () => {
   await app.start();
-  console.log('Athena daemon connected via Socket Mode. Listening on #chief-of-staff. Idle cost: $0 — nothing runs until a message arrives.');
+  console.log('Athena daemon connected via Socket Mode (vision enabled). Listening on #chief-of-staff. Idle cost: $0 — nothing runs until a message arrives.');
 })();
