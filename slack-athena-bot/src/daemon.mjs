@@ -92,6 +92,24 @@ const TOOLS = [
       properties: { limit: { type: 'number' } },
     },
   },
+  {
+    name: 'create_lead',
+    description: 'Add a lead/deal to the Mission OS Pipeline Tracker (the same as the "Add a Deal" button). Use this for new prospects — business cards, referrals, people Rob met — NOT for internal work items (those are tasks).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Contact or business name (required)' },
+        email: { type: 'string' },
+        phone: { type: 'string', description: 'Phone number if known — Rob uses this for click-to-call' },
+        company: { type: 'string' },
+        campaign: { type: 'string', description: 'How the lead came in, e.g. "Networking", "Postcard"' },
+        stage: { type: 'string', description: 'Pipeline stage — omit for a brand-new lead (defaults to New Lead)' },
+        value: { type: 'number', description: 'Deal value in dollars, if known' },
+        notes: { type: 'string' },
+      },
+      required: ['name'],
+    },
+  },
 ];
 
 async function executeTool(name, input) {
@@ -104,17 +122,23 @@ async function executeTool(name, input) {
       const result = await callBridge('list_pending', input.limit ? { limit: input.limit } : {});
       return { content: JSON.stringify(result) };
     }
+    if (name === 'create_lead') {
+      const result = await callBridge('create_lead', input);
+      return { content: JSON.stringify(result) };
+    }
     return { content: `Unknown tool: ${name}`, isError: true };
   } catch (err) {
     return { content: `Error: ${err.message ?? err}`, isError: true };
   }
 }
 
-const SYSTEM_PROMPT_BASE = `You are Athena, Rob's chief-of-staff assistant for Mission Driven Brand, talking with him directly in Slack. Be concise — this is chat, not a doc. You can create tasks in Mission OS and check the pending work queue via tools. Only use tools when Rob is actually asking you to do one of those things; otherwise just reply conversationally. Never fabricate task IDs or queue contents — only report what a tool call actually returns.
+const SYSTEM_PROMPT_BASE = `You are Athena, Rob's chief-of-staff assistant for Mission Driven Brand, talking with him directly in Slack. Be concise — this is chat, not a doc. Via tools you can: create tasks in Mission OS, add leads/deals to the Pipeline Tracker, and check the pending work queue. Only use tools when Rob is actually asking you to do one of those things; otherwise just reply conversationally. Never fabricate task/lead IDs or queue contents — only report what a tool call actually returns.
+
+Choosing the right tool: new prospects and contacts (business cards, referrals, people Rob met) go into the Pipeline as leads via create_lead. Internal work items and to-dos go into Tasks via create_task. If Rob shares several business cards at once, create one lead per card.
 
 Formatting rules, important:
 - Write plain, natural chat replies. Never prefix your reply with a Slack user ID, mention token, or any bracketed/angle-bracketed ID like "[U12345]" or "<@U12345>" — just answer directly, no ID tags of any kind.
-- You only have exactly two tools: create_task and list_pending. Never simulate, role-play, or fake-format a call to a terminal, shell, or any other tool you don't have — if you don't have a real way to answer something (e.g. you don't have a live clock), just say so plainly instead of inventing fake command output.
+- You only have exactly three tools: create_task, create_lead, and list_pending. Never simulate, role-play, or fake-format a call to a terminal, shell, or any other tool you don't have — if you don't have a real way to answer something (e.g. you don't have a live clock), just say so plainly instead of inventing fake command output.
 - When Rob attaches photos (business cards, screenshots, documents), they are included in the message — read them directly and transcribe exactly what you see. Never invent details that aren't legible; say when something is unreadable.`;
 
 function stripSlackMentions(text) {

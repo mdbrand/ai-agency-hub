@@ -151,6 +151,20 @@ async function cmdCreateTask(flags) {
   if (resolved_project_id) console.log(`  project: ${resolved_project_id}`);
 }
 
+async function cmdCreateLead(flags) {
+  if (!flags.name) {
+    console.error('Usage: queue create-lead --name "..." [--email ...] [--phone ...] [--company "..."] [--campaign "..."] [--stage "..."] [--value N] [--notes "..."]');
+    process.exit(1);
+  }
+  const body = { name: flags.name };
+  for (const key of ['email', 'phone', 'company', 'campaign', 'stage', 'notes']) {
+    if (typeof flags[key] === 'string') body[key] = flags[key];
+  }
+  if (flags.value) body.value = Number(flags.value);
+  const { lead_id } = await callBridge('create_lead', body);
+  console.log(`Lead ${lead_id} created in the Pipeline Tracker.`);
+}
+
 const [, , cmd, ...rest] = process.argv;
 const flags = parseFlags(rest);
 const id = rest.find((a) => !a.startsWith('--'));
@@ -179,8 +193,11 @@ try {
     case 'create-task':
       await cmdCreateTask(flags);
       break;
+    case 'create-lead':
+      await cmdCreateLead(flags);
+      break;
     default:
-      console.log('Usage: node src/queue.mjs <list|claim|reply|fail|check-session|create-task> [id] [--content|--detail "..."] [--metadata \'{...}\']');
+      console.log('Usage: node src/queue.mjs <list|claim|reply|fail|check-session|create-task|create-lead> [id] [--content|--detail "..."] [--metadata \'{...}\']');
       process.exit(1);
   }
 } catch (err) {
