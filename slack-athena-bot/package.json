@@ -1,0 +1,15 @@
+{
+  "name": "slack-athena-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Posts to Slack as the Athena bot identity, using a dedicated Bot User OAuth token (separate from Rob's personal Slack connection).",
+  "scripts": {
+    "post": "node src/post.mjs",
+    "daemon": "node src/daemon.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@slack/bolt": "^4.2.0"
+  }
+}

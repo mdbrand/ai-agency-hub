@@ -1,0 +1,26 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "hope",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["voice-agent/server.js"],
+      "port": 3000,
+      "autoPort": false
+    },
+    {
+      "name": "cbp-job-map",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "cbp-job-map", "run", "dev", "--", "--port", "3010"],
+      "port": 3010,
+      "autoPort": false
+    },
+    {
+      "name": "cpsc-brief",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "cpsc-safety-pipeline/web", "run", "dev", "--", "--port", "3020"],
+      "port": 3020,
+      "autoPort": false
+    }
+  ]
+}

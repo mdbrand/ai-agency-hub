@@ -1,0 +1,13 @@
+{
+  "name": "mission-os-bridge",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "v0 queue utility bridging Mission OS (agent-messages HTTP bridge) to local Claude Code subagents",
+  "scripts": {
+    "queue": "node src/queue.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  }
+}

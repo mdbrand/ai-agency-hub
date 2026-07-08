@@ -1,0 +1,19 @@
+{
+  "name": "finance-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Read-only daily cash balance report → Slack. MVP-0: Mercury only.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "report": "tsx src/report.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}
