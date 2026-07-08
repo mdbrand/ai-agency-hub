@@ -1,12 +1,11 @@
 services:
   - type: worker
     name: athena-slack-daemon
-    runtime: node
+    env: node
     plan: starter
     rootDir: slack-athena-bot
     buildCommand: npm install
     startCommand: node src/daemon.mjs
-    autoDeploy: true
     envVars:
       - key: NODE_VERSION
         value: "20"
