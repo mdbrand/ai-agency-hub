@@ -40,6 +40,7 @@ for (const [name, val] of Object.entries({ SLACK_BOT_TOKEN, SLACK_APP_TOKEN, ANT
     process.exit(1);
   }
 }
+console.log(`[startup diag] SLACK_APP_TOKEN length=${SLACK_APP_TOKEN.length} prefix=${SLACK_APP_TOKEN.slice(0, 6)} SLACK_BOT_TOKEN length=${SLACK_BOT_TOKEN.length} prefix=${SLACK_BOT_TOKEN.slice(0, 6)}`);
 
 const TARGET_CHANNEL = 'C0BFA6D9WMS'; // #chief-of-staff
 const MODEL = 'claude-sonnet-5';
