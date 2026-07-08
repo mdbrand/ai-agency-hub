@@ -208,16 +208,20 @@ async function runAthenaTurn(channel, userContent, messageTs) {
   const sentAt = messageTs ? new Date(parseFloat(messageTs) * 1000) : new Date();
   const systemPrompt = `${SYSTEM_PROMPT_BASE}\n\nThis message was sent at: ${sentAt.toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'long' })}. Use this if Rob asks what time/day it is — don't fabricate a way to look it up.`;
 
-  for (let iterations = 0; iterations < 5; iterations++) {
+  for (let iterations = 0; iterations < 8; iterations++) {
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 1024,
+      max_tokens: 4096,
       system: systemPrompt,
       tools: TOOLS,
       messages,
     });
 
-    if (response.stop_reason !== 'tool_use') {
+    // Branch on the actual content, not stop_reason: a max_tokens cutoff can
+    // still carry complete tool_use blocks, and storing a tool_use without
+    // executing it corrupts the history (the API rejects every later turn).
+    const toolUses = response.content.filter((b) => b.type === 'tool_use');
+    if (toolUses.length === 0) {
       finalText = response.content
         .filter((b) => b.type === 'text')
         .map((b) => b.text)
