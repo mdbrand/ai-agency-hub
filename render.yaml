@@ -1,0 +1,22 @@
+services:
+  - type: worker
+    name: athena-slack-daemon
+    runtime: node
+    plan: starter
+    rootDir: slack-athena-bot
+    buildCommand: npm install
+    startCommand: node src/daemon.mjs
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: SLACK_BOT_TOKEN
+        sync: false
+      - key: SLACK_APP_TOKEN
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: BRIDGE_URL
+        value: https://project--b13a6383-bb34-484c-a0c6-75e4b9137e3f.lovable.app/api/public/bridge/agent-messages
+      - key: BRIDGE_TOKEN
+        sync: false
