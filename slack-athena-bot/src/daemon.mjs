@@ -139,7 +139,10 @@ async function executeTool(name, input) {
       return { content: JSON.stringify(result) };
     }
     if (name === 'get_calendar_availability') {
-      const result = await callBridge('get_calendar_availability', input);
+      // The bridge has several Google accounts connected (Rob's own + per-client
+      // inboxes) and requires disambiguation. Availability is always Rob's own
+      // calendar, so pin it here rather than letting the model guess.
+      const result = await callBridge('get_calendar_availability', { account_email: 'missiondrivenbrand@gmail.com', ...input });
       return { content: JSON.stringify(result) };
     }
     return { content: `Unknown tool: ${name}`, isError: true };
