@@ -198,6 +198,7 @@ const SYSTEM_PROMPT_BASE = `You are Athena, Rob's chief-of-staff assistant for M
 Choosing the right tool: new prospects and contacts (business cards, referrals, people Rob met) go into the Pipeline as leads via create_lead. Internal work items and to-dos go into Tasks via create_task. If Rob shares several business cards at once, create one lead per card.
 
 Email: Rob has several inboxes connected, one per client plus his own. When he names a client's inbox ("the Cooley inbox", "did Publicity for Good hear back"), call list_email_accounts first to map the client name to the right email address, then search_emails. search_emails returns snippets; call get_email for the full body of a specific message. Email access is read-only — you cannot send or draft; if Rob asks you to send/reply, say you can read but not send yet.
+For triage-style questions ("how many are notifications vs real people", "what needs my attention", "summarize my inbox"), do it EFFICIENTLY: pull a batch with search_emails using a higher limit (e.g. 25-50) and judge each message from its sender and snippet alone — notifications/automated mail are obvious from the sender (no-reply@, notifications@, automated services, receipts, alerts) vs. a real person writing to Rob. Do NOT open every message with get_email; only use get_email for the few that actually matter or when Rob asks for a specific message's details. Then give counts plus a short list of the real ones worth his attention.
 
 Formatting rules, important:
 - You are writing in Slack, which does NOT use Markdown. Never use Markdown syntax: no ** for bold, no ## headings, no [label](url) links. If you must emphasize, Slack bold is a SINGLE asterisk (*like this*). Prefer clean plain text with simple labels (e.g. "From: ...", "Subject: ...") over any markup. Keep it tidy and readable.
@@ -287,7 +288,7 @@ async function runAthenaTurn(channel, userContent, messageTs) {
   const sentAt = messageTs ? new Date(parseFloat(messageTs) * 1000) : new Date();
   const systemPrompt = `${SYSTEM_PROMPT_BASE}\n\nThis message was sent at: ${sentAt.toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'long' })}. Use this if Rob asks what time/day it is — don't fabricate a way to look it up.`;
 
-  for (let iterations = 0; iterations < 8; iterations++) {
+  for (let iterations = 0; iterations < 12; iterations++) {
     const response = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 4096,
@@ -322,6 +323,25 @@ async function runAthenaTurn(channel, userContent, messageTs) {
       });
     }
     messages = [...messages, { role: 'user', content: toolResults }];
+  }
+
+  // If the loop ran out of tool-call rounds while still wanting tools, force
+  // one final text-only answer (no tools passed) so Rob always gets a real
+  // reply built from whatever was gathered — never a bare placeholder.
+  if (!finalText) {
+    try {
+      const finalResp = await anthropic.messages.create({
+        model: MODEL,
+        max_tokens: 4096,
+        system: `${systemPrompt}\n\nYou have gathered enough information and must stop calling tools now. Answer Rob directly in plain Slack text using what you already have. If the picture is only partial (e.g. you couldn't scan every email), give your best summary so far and say plainly what was incomplete and why — do not apologize excessively or return nothing.`,
+        messages,
+      });
+      finalText = finalResp.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n');
+      messages = [...messages, { role: 'assistant', content: finalResp.content }];
+      console.log('[loop] forced final text-only answer after hitting tool-round cap');
+    } catch (err) {
+      console.error('[loop] final no-tools call failed:', err.message ?? err);
+    }
   }
 
   // Keep history text-only: replace image blocks with placeholders so
