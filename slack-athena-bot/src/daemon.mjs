@@ -200,12 +200,28 @@ Choosing the right tool: new prospects and contacts (business cards, referrals, 
 Email: Rob has several inboxes connected, one per client plus his own. When he names a client's inbox ("the Cooley inbox", "did Publicity for Good hear back"), call list_email_accounts first to map the client name to the right email address, then search_emails. search_emails returns snippets; call get_email for the full body of a specific message. Email access is read-only — you cannot send or draft; if Rob asks you to send/reply, say you can read but not send yet.
 
 Formatting rules, important:
+- You are writing in Slack, which does NOT use Markdown. Never use Markdown syntax: no ** for bold, no ## headings, no [label](url) links. If you must emphasize, Slack bold is a SINGLE asterisk (*like this*). Prefer clean plain text with simple labels (e.g. "From: ...", "Subject: ...") over any markup. Keep it tidy and readable.
 - Write plain, natural chat replies. Never prefix your reply with a Slack user ID, mention token, or any bracketed/angle-bracketed ID like "[U12345]" or "<@U12345>" — just answer directly, no ID tags of any kind.
 - You only have exactly seven tools: create_task, create_lead, list_pending, get_calendar_availability, list_email_accounts, search_emails, and get_email. Never simulate, role-play, or fake-format a call to a terminal, shell, or any other tool you don't have — if you don't have a real way to answer something (e.g. you don't have a live clock), just say so plainly instead of inventing fake command output.
 - When Rob attaches photos (business cards, screenshots, documents), they are included in the message — read them directly and transcribe exactly what you see. Never invent details that aren't legible; say when something is unreadable.`;
 
 function stripSlackMentions(text) {
   return text.replace(/<@[A-Z0-9]+>/g, '').trim();
+}
+
+// Slack uses its own "mrkdwn", not standard Markdown — **bold**, ## headings,
+// and [label](url) links all render as literal junk. Convert the model's
+// Markdown output to Slack-native formatting before posting, as a safety net
+// on top of the system-prompt instruction.
+function toSlackMrkdwn(text) {
+  if (!text) return text;
+  let t = text;
+  t = t.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<$2|$1>'); // [label](url) -> <url|label>
+  t = t.replace(/\*\*(.+?)\*\*/gs, '*$1*'); // **bold** -> *bold*
+  t = t.replace(/__(.+?)__/gs, '*$1*'); // __bold__ -> *bold*
+  t = t.replace(/^#{1,6}\s+(.*)$/gm, '*$1*'); // # Heading -> *Heading*
+  t = t.replace(/^(\s*)[-*]\s+/gm, '$1• '); // - bullet / * bullet -> • bullet
+  return t;
 }
 
 const MAX_IMAGES = 4;
@@ -353,7 +369,7 @@ app.message(async ({ message, say }) => {
     console.log('[processing] calling Anthropic...');
     const reply = await runAthenaTurn(`${message.channel}:${threadTs}`, content, message.ts);
     console.log(`[reply] ${JSON.stringify(reply)}`);
-    await say({ text: reply, thread_ts: threadTs });
+    await say({ text: toSlackMrkdwn(reply), thread_ts: threadTs });
     console.log('[posted] reply sent to Slack');
   } catch (err) {
     console.error('Error handling message:', err);
