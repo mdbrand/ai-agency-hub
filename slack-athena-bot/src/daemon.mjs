@@ -458,10 +458,22 @@ async function runAthenaTurn(channel, userContent, messageTs, attachments) {
     }
   }
 
-  // Keep history text-only: replace image blocks with placeholders so
-  // follow-up turns don't re-send megabytes of base64 every 90 seconds.
-  // Athena's transcription of the image lives in her reply text anyway.
-  state.messages = messages.slice(-MAX_HISTORY_MESSAGES).map((m) => ({
+  // Trim history to the most recent messages — but the API requires the first
+  // message to be a genuine user turn (role user, no orphaned tool_result
+  // blocks). A naive slice can cut through a tool_use/tool_result pair and
+  // leave a dangling tool_result at position 0, which 400s the next call.
+  // So after slicing, drop leading messages until we start on a clean user turn.
+  const isCleanUserStart = (m) =>
+    m.role === 'user' &&
+    (typeof m.content === 'string' || !m.content.some((b) => b.type === 'tool_result'));
+
+  let trimmed = messages.slice(-MAX_HISTORY_MESSAGES);
+  while (trimmed.length && !isCleanUserStart(trimmed[0])) trimmed.shift();
+
+  // Replace image blocks with placeholders so follow-up turns don't re-send
+  // megabytes of base64 every message. Athena's read of the image is in her
+  // reply text anyway.
+  state.messages = trimmed.map((m) => ({
     ...m,
     content: Array.isArray(m.content)
       ? m.content.map((b) => (b.type === 'image' ? { type: 'text', text: '[image was attached here and already analyzed]' } : b))
