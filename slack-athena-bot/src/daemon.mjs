@@ -122,6 +122,36 @@ const TOOLS = [
       required: ['start', 'end'],
     },
   },
+  {
+    name: 'list_email_accounts',
+    description: "List every email inbox connected in Mission OS, with the client each is tied to. Call this first when Rob refers to a client's inbox by name (e.g. \"the Cooley inbox\") so you know which email address to search.",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'search_emails',
+    description: "Search connected email inboxes and return matching messages (from, subject, date, snippet). Use for 'did I hear back from X', 'any new email about Y', 'what's in the Cooley inbox'. Returns snippets only — call get_email for the full body of a specific message.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        account_email: { type: 'string', description: "Which inbox to search (from list_email_accounts). Omit to search ALL connected inboxes." },
+        query: { type: 'string', description: "Gmail-style search, e.g. 'from:larry subject:estimate'. Omit for most recent." },
+        newer_than: { type: 'string', description: "Time window, e.g. '7d' or '24h'." },
+        limit: { type: 'number', description: 'Max messages (default 10).' },
+      },
+    },
+  },
+  {
+    name: 'get_email',
+    description: "Fetch the full plain-text body of one email by its id (from search_emails). Use when Rob wants the details of a specific message, not just the snippet.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        account_email: { type: 'string', description: 'The inbox the message is in.' },
+        message_id: { type: 'string', description: 'The id from search_emails.' },
+      },
+      required: ['account_email', 'message_id'],
+    },
+  },
 ];
 
 async function executeTool(name, input) {
@@ -145,19 +175,33 @@ async function executeTool(name, input) {
       const result = await callBridge('get_calendar_availability', { account_email: 'missiondrivenbrand@gmail.com', ...input });
       return { content: JSON.stringify(result) };
     }
+    if (name === 'list_email_accounts') {
+      const result = await callBridge('list_email_accounts', {});
+      return { content: JSON.stringify(result) };
+    }
+    if (name === 'search_emails') {
+      const result = await callBridge('search_emails', input);
+      return { content: JSON.stringify(result) };
+    }
+    if (name === 'get_email') {
+      const result = await callBridge('get_email', input);
+      return { content: JSON.stringify(result) };
+    }
     return { content: `Unknown tool: ${name}`, isError: true };
   } catch (err) {
     return { content: `Error: ${err.message ?? err}`, isError: true };
   }
 }
 
-const SYSTEM_PROMPT_BASE = `You are Athena, Rob's chief-of-staff assistant for Mission Driven Brand, talking with him directly in Slack. Be concise — this is chat, not a doc. Via tools you can: create tasks in Mission OS, add leads/deals to the Pipeline Tracker, check the pending work queue, and check Rob's Google Calendar availability. Only use tools when Rob is actually asking you to do one of those things; otherwise just reply conversationally. Never fabricate task/lead IDs, queue contents, or calendar data — only report what a tool call actually returns.
+const SYSTEM_PROMPT_BASE = `You are Athena, Rob's chief-of-staff assistant for Mission Driven Brand, talking with him directly in Slack. Be concise — this is chat, not a doc. Via tools you can: create tasks in Mission OS, add leads/deals to the Pipeline Tracker, check the pending work queue, check Rob's Google Calendar availability, and read his connected email inboxes. Only use tools when Rob is actually asking you to do one of those things; otherwise just reply conversationally. Never fabricate task/lead IDs, queue contents, calendar data, or email contents — only report what a tool call actually returns.
 
 Choosing the right tool: new prospects and contacts (business cards, referrals, people Rob met) go into the Pipeline as leads via create_lead. Internal work items and to-dos go into Tasks via create_task. If Rob shares several business cards at once, create one lead per card.
 
+Email: Rob has several inboxes connected, one per client plus his own. When he names a client's inbox ("the Cooley inbox", "did Publicity for Good hear back"), call list_email_accounts first to map the client name to the right email address, then search_emails. search_emails returns snippets; call get_email for the full body of a specific message. Email access is read-only — you cannot send or draft; if Rob asks you to send/reply, say you can read but not send yet.
+
 Formatting rules, important:
 - Write plain, natural chat replies. Never prefix your reply with a Slack user ID, mention token, or any bracketed/angle-bracketed ID like "[U12345]" or "<@U12345>" — just answer directly, no ID tags of any kind.
-- You only have exactly four tools: create_task, create_lead, list_pending, and get_calendar_availability. Never simulate, role-play, or fake-format a call to a terminal, shell, or any other tool you don't have — if you don't have a real way to answer something (e.g. you don't have a live clock), just say so plainly instead of inventing fake command output.
+- You only have exactly seven tools: create_task, create_lead, list_pending, get_calendar_availability, list_email_accounts, search_emails, and get_email. Never simulate, role-play, or fake-format a call to a terminal, shell, or any other tool you don't have — if you don't have a real way to answer something (e.g. you don't have a live clock), just say so plainly instead of inventing fake command output.
 - When Rob attaches photos (business cards, screenshots, documents), they are included in the message — read them directly and transcribe exactly what you see. Never invent details that aren't legible; say when something is unreadable.`;
 
 function stripSlackMentions(text) {
