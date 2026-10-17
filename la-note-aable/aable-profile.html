@@ -1,0 +1,235 @@
+<title>Aable: Sixteen Bars and a Day Job</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a single reading column with a poster-style name block up top, a bar-count timeline, and link-out "listening booth" cards. Philly blue and gold. */
+  :root {
+    --paper: #f2f4f7;
+    --ink: #0f1d33;
+    --muted: #4c5a70;
+    --rule: #cdd4df;
+    --blue: #1d4b9b;
+    --gold: #c8930f;
+    --card: #ffffff;
+    --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+    --body: "Newsreader", Georgia, "Times New Roman", serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0c1525; --ink: #e5eaf3; --muted: #9aa8be; --rule: #24324a;
+      --blue: #84a9f2; --gold: #e9bb43; --card: #121e33; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0c1525; --ink: #e5eaf3; --muted: #9aa8be; --rule: #24324a;
+    --blue: #84a9f2; --gold: #e9bb43; --card: #121e33; color-scheme: dark;
+  }
+
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--body); font-size: 1.15rem; line-height: 1.65;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 0 4rem;
+  }
+  .wrap { max-width: 44rem; margin: 0 auto; }
+  a { color: var(--blue); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 2px; }
+
+  .masthead {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap;
+    border-bottom: 2px solid var(--ink); padding-block: 1.1rem .6rem; margin-bottom: 2.5rem;
+  }
+  .masthead .pub { font-family: var(--display); font-weight: 900; font-size: 1.6rem; letter-spacing: .02em; text-transform: uppercase; }
+  .masthead .pub span { color: var(--gold); }
+  .meta { font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+  .kicker { font-family: var(--mono); font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--blue); margin: 0 0 .5rem; }
+  .name {
+    font-family: var(--display); font-weight: 900; line-height: .82; margin: 0;
+    font-size: clamp(6rem, 30vw, 13rem); letter-spacing: -.01em; text-transform: uppercase;
+  }
+  .name .a1 { color: var(--gold); }
+  h1 {
+    font-family: var(--display); font-weight: 700; text-transform: uppercase;
+    font-size: clamp(2rem, 7vw, 3.1rem); line-height: 1; margin: .9rem 0 1rem; text-wrap: balance;
+  }
+  .dek { font-size: 1.3rem; line-height: 1.45; color: var(--muted); margin: 0 0 1.4rem; text-wrap: pretty; }
+  .byline { font-family: var(--mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-top: 1px solid var(--rule); padding-top: .8rem; }
+
+  article { margin-top: 2.6rem; }
+  article p { margin: 0 0 1.25rem; }
+  article > p:first-of-type::first-letter {
+    font-family: var(--display); font-weight: 900; float: left; font-size: 4.6rem; line-height: .8;
+    padding: .35rem .5rem 0 0; color: var(--blue);
+  }
+  h2 {
+    font-family: var(--display); font-weight: 700; text-transform: uppercase; font-size: 1.9rem;
+    line-height: 1.05; margin: 2.8rem 0 1rem; text-wrap: balance;
+  }
+  h2 .bars { font-family: var(--mono); font-weight: 500; font-size: .75rem; letter-spacing: .1em; color: var(--gold); display: block; margin-bottom: .35rem; }
+
+  blockquote {
+    margin: 2.2rem 0; padding: 0 0 0 1.2rem; border-left: 4px solid var(--gold);
+    font-style: italic; font-size: 1.45rem; line-height: 1.4;
+  }
+  blockquote cite { display: block; font-style: normal; font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: .6rem; }
+
+  .roster { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 1.25rem; padding: 0; list-style: none; }
+  .roster li { font-family: var(--mono); font-size: .78rem; border: 1px solid var(--rule); padding: .2rem .55rem; border-radius: 3px; }
+  .roster li.him { border-color: var(--gold); color: var(--ink); background: color-mix(in srgb, var(--gold) 18%, transparent); }
+
+  /* Timeline: the order is real, so it gets a real sequence */
+  .timeline { list-style: none; margin: 1.4rem 0 2rem; padding: 0; border-left: 2px solid var(--rule); }
+  .timeline li { display: grid; grid-template-columns: 4.2rem 1fr; gap: .9rem; padding: .55rem 0 .55rem .9rem; position: relative; }
+  .timeline li::before { content: ""; position: absolute; left: -6px; top: 1.05rem; width: 10px; height: 10px; border-radius: 50%; background: var(--paper); border: 2px solid var(--blue); }
+  .timeline li.peak::before { background: var(--gold); border-color: var(--gold); }
+  .timeline .yr { font-family: var(--mono); font-size: .85rem; color: var(--blue); font-variant-numeric: tabular-nums; padding-top: .15rem; }
+  .timeline .what { min-width: 0; font-size: 1.02rem; line-height: 1.45; }
+  .timeline .what b { font-weight: 600; }
+
+  .booth { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .8rem; margin: 1.2rem 0 1.5rem; }
+  .booth a {
+    display: flex; flex-direction: column; gap: .25rem; text-decoration: none; color: var(--ink);
+    background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: .95rem 1rem;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .booth a:hover { border-color: var(--blue); transform: translateY(-2px); }
+  .booth .where { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--blue); }
+  .booth .title { font-family: var(--display); font-weight: 700; font-size: 1.35rem; text-transform: uppercase; line-height: 1.05; }
+  .booth .note { font-size: .92rem; color: var(--muted); line-height: 1.4; }
+  .booth .go { font-family: var(--mono); font-size: .75rem; color: var(--gold); margin-top: .2rem; }
+
+  .sources { margin-top: 3rem; border-top: 2px solid var(--ink); padding-top: 1rem; }
+  .sources h3 { font-family: var(--mono); font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; margin: 0 0 .6rem; }
+  .sources ol { margin: 0; padding-left: 1.2rem; font-size: .9rem; line-height: 1.5; color: var(--muted); }
+  .sources li { margin-bottom: .3rem; }
+
+  @media (max-width: 480px) {
+    body { font-size: 1.06rem; }
+    .timeline li { grid-template-columns: 3.4rem 1fr; gap: .6rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { .booth a { transition: none; } .booth a:hover { transform: none; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="pub">The LA <span>Note</span></div>
+    <div class="meta">Profile · October 17, 2026</div>
+  </header>
+
+  <p class="kicker">Philadelphia · Christian hip-hop</p>
+  <p class="name" aria-label="Aable"><span class="a1">A</span>able</p>
+  <h1>Sixteen bars and a day job</h1>
+  <p class="dek">He spent eight years building a name in Philly's Christian rap scene. Then he won the HOLY SMOKE! Cypher, landed on Sway in the Morning, and went back to work on Monday.</p>
+  <div class="byline">By The LA Note staff</div>
+
+  <article>
+    <p>When DJ Mykael V walked into the <i>Sway in the Morning</i> studio this month, he brought five rappers: Jackie Hill Perry, Parris Chariz, C4 Crotona, Nate Rose, and a Philadelphia MC named Aable. Most of those names have years of national touring behind them. Aable was introduced a different way, as the man who had just won the 2026 HOLY SMOKE! Cypher.</p>
+
+    <ul class="roster" aria-label="Sway in the Morning guests">
+      <li>Jackie Hill Perry</li>
+      <li class="him">Aable</li>
+      <li>Parris Chariz</li>
+      <li>C4 Crotona</li>
+      <li>Nate Rose</li>
+    </ul>
+
+    <p>On air he didn't talk like a man who had arrived. According to Rapzilla's write-up of the visit, he talked about the weight of a bigger audience while he still works a 9-to-5 and comes home to a wife and kids. He also explained the name. For him it is a daily reminder of his own limits, and of leaning on God's strength instead of his own.</p>
+
+    <p>That tension runs through everything he has put out. Aable makes music for people who have jobs, families and bills and still want a verse to carry some weight. Last year's catalog proves he can rap. This year proved other people have noticed.</p>
+
+    <h2><span class="bars">Bars 1–4 · The roots</span>Discipleship first, then the music</h2>
+
+    <p>Aable has been putting songs out since at least 2018, when Rapzilla premiered "Lovin' It," a Klae Beats production about being, in the outlet's words, madly in love with God. In 2019 he followed with videos for "Think Too Much" and "Sweet," and Rapzilla's description of him from that year still fits:</p>
+
+    <blockquote>
+      An artist from Philly committed to seeing music and discipleship come together in a dynamic way.
+      <cite>Rapzilla, 2019</cite>
+    </blockquote>
+
+    <p>The stated goal is to hand believers deep but simple truths they can carry out into the world. That's a plain ambition, and it's the reason his songs feel like they're meant to be used, not just played.</p>
+
+    <p>He also showed up for his city. On "That Philly Jawn," a Christ-centered cypher shot and assembled by Jomil Nazario, Aable trades verses with Q-flo, Prodi, BelievinStephen and takeflight. The point of the video was to give local artists a stage. In 2022 Rapzilla ran a feature arguing that Christian rap from Philadelphia should no longer be slept on. The city that produced the Cross Movement had a new bench, and Aable was on it.</p>
+
+    <h2><span class="bars">Bars 5–8 · The challenge</span>Winning the room at Esperanza</h2>
+
+    <p>The clearest early sign of what he could do came at Rapzilla's 16 Bar Challenge, held at the Esperanza campus in Philadelphia during the God in the City conference. The format is unforgiving. You get sixteen bars, three judges (that day Loso, Tee-Wyla and OnBeatMusic) and a crowd that has heard every punchline before. Aable beat Brenno in the second semifinal, then took the final against T-Coda.</p>
+
+    <p>Brenno went on to win his own Sway in the Morning slot at HOLY SMOKE! in 2025. A year later it was Aable's turn.</p>
+
+    <h2><span class="bars">Bars 9–12 · The album</span>MUSICAL CHAIRS and the national radar</h2>
+
+    <p>In 2024 Aable released <i>MUSICAL CHAIRS</i>. When the Rapzilla Awards nominees were announced that December, the record was on the Album of the Year list and Aable was up for Breakout Artist of the Year, in a field with C4 Crotona, Will Kellum, KRL, tylerhateslife and gio. Gio. took the readers' vote. Still, being on that ballot told a wider audience that the Philly rapper with the double-A name was worth hearing.</p>
+
+    <p>He kept up the pace. "threeforthree" arrived in April 2025, and "that's all i know" followed in July. He also turned up on "HARD OUT HERE!" with DJ Mykael V and Gavin the HotRod, which tied him to the DJ who would put him on the radio a year later.</p>
+
+    <h2><span class="bars">Bars 13–16 · The moment</span>HOLY SMOKE! and what comes next</h2>
+
+    <p>HOLY SMOKE! ran August 6–8, 2026 at Rocketown in Nashville. The cypher is the festival's showcase for MCs. Aable won it, and his verse was released on DJ Mykael V's <i>HOLY SMOKE! CYPHER 2026</i> EP. The same month brought "KNOCK KNOCK," out August 14, and the 2026 <i>HOME</i> EP is on streaming services too.</p>
+
+    <p>Then came Sway in the Morning, where Aable sat beside artists he had probably studied, said his name, and rapped. He didn't come with a breakout single or a label campaign. He has eight years of steady, purposeful work and a habit of winning the room when it matters.</p>
+
+    <p>It is hard to build an audience with a day job and a family waiting at home. Aable is doing it anyway, and he hears it as part of the message: whatever he has, he didn't produce on his own strength. Put on <i>MUSICAL CHAIRS</i>, then the cypher verse, then "KNOCK KNOCK." You'll hear where the name comes from.</p>
+
+    <h2><span class="bars">Outro</span>The timeline</h2>
+    <ol class="timeline">
+      <li><span class="yr">2018</span><span class="what"><b>"Lovin' It"</b> (prod. Klae Beats) premieres on Rapzilla</span></li>
+      <li><span class="yr">2019</span><span class="what"><b>"Think Too Much"</b> and <b>"Sweet"</b> music videos</span></li>
+      <li><span class="yr">2019+</span><span class="what"><b>"That Philly Jawn"</b> cypher with Q-flo, Prodi, BelievinStephen and takeflight</span></li>
+      <li><span class="yr">2022</span><span class="what">Wins Rapzilla's <b>16 Bar Challenge</b> at Esperanza, Philadelphia</span></li>
+      <li><span class="yr">2024</span><span class="what"><b><i>MUSICAL CHAIRS</i></b>, with Rapzilla Awards nominations for Album of the Year and Breakout Artist</span></li>
+      <li><span class="yr">2025</span><span class="what"><b>"threeforthree"</b>, <b>"that's all i know"</b>, and a feature on <b>"HARD OUT HERE!"</b></span></li>
+      <li class="peak"><span class="yr">Aug '26</span><span class="what">Wins the <b>HOLY SMOKE! Cypher</b> in Nashville; releases <b>"KNOCK KNOCK"</b> and the <b><i>HOME</i></b> EP</span></li>
+      <li class="peak"><span class="yr">Oct '26</span><span class="what">Guest on <b>Sway in the Morning</b> with DJ Mykael V</span></li>
+    </ol>
+
+    <h2><span class="bars">Press play</span>Where to listen</h2>
+    <div class="booth">
+      <a href="https://open.spotify.com/artist/3LelS8evrI9XeIxtTOOcUw" target="_blank" rel="noopener">
+        <span class="where">Spotify</span><span class="title">Aable</span>
+        <span class="note">Full catalog, about 37.6K monthly listeners as of this writing.</span><span class="go">Open in Spotify →</span>
+      </a>
+      <a href="https://music.apple.com/us/artist/aable/1447656013" target="_blank" rel="noopener">
+        <span class="where">Apple Music</span><span class="title">KNOCK KNOCK · HOME</span>
+        <span class="note">The 2026 single and EP, plus <i>MUSICAL CHAIRS</i>.</span><span class="go">Open in Apple Music →</span>
+      </a>
+      <a href="https://music.apple.com/us/album/holy-smoke-cypher-2026/6807716308" target="_blank" rel="noopener">
+        <span class="where">Apple Music</span><span class="title">HOLY SMOKE! Cypher 2026</span>
+        <span class="note">DJ Mykael V's EP with the winning verse.</span><span class="go">Hear the cypher →</span>
+      </a>
+      <a href="https://www.youtube.com/watch?v=Bc754dsvsN0" target="_blank" rel="noopener">
+        <span class="where">YouTube</span><span class="title">"Sweet"</span>
+        <span class="note">The 2019 music video.</span><span class="go">Watch →</span>
+      </a>
+      <a href="https://bio.site/Aable" target="_blank" rel="noopener">
+        <span class="where">Official</span><span class="title">bio.site/Aable</span>
+        <span class="note">All of his links in one place.</span><span class="go">Visit →</span>
+      </a>
+      <a href="https://www.facebook.com/aablemusic" target="_blank" rel="noopener">
+        <span class="where">Facebook</span><span class="title">@aablemusic</span>
+        <span class="note">News, drops and show dates.</span><span class="go">Follow →</span>
+      </a>
+    </div>
+  </article>
+
+  <section class="sources" aria-label="Sources">
+    <h3>Sources</h3>
+    <ol>
+      <li><a href="https://rapzilla.com/2026-10-holy-smoke-cypher-nashville-edition-sway-morning/" target="_blank" rel="noopener">Rapzilla: HOLY SMOKE! Cypher Nashville Edition Comes to Sway in the Morning</a></li>
+      <li><a href="https://rapzilla.com/2018-04-aable-lovin-it/" target="_blank" rel="noopener">Rapzilla: Aable, "Lovin' It"</a></li>
+      <li><a href="https://rapzilla.com/2019-04-aable-think-too-much/" target="_blank" rel="noopener">Rapzilla: Aable, "Think Too Much"</a></li>
+      <li><a href="https://rapzilla.com/2019-11-aable-sweet-music-video/" target="_blank" rel="noopener">Rapzilla: Aable, "Sweet" music video</a></li>
+      <li><a href="https://rapzilla.com/?p=75889" target="_blank" rel="noopener">Rapzilla: "That Philly Jawn" cypher</a></li>
+      <li><a href="https://rapzilla.com/?p=93699" target="_blank" rel="noopener">Rapzilla: Aable vs Brenno, 16 Bar Challenge at Esperanza</a></li>
+      <li><a href="https://rapzilla.com/2022-06-christian-rap-philadelphia-should-longer-slept/" target="_blank" rel="noopener">Rapzilla: Christian Rap From Philly Should No Longer Be Slept On</a></li>
+      <li><a href="https://rapzilla.com/2024-12-rapzilla-awards-2024-nominees-vote-now/" target="_blank" rel="noopener">Rapzilla: Rapzilla Awards 2024 Nominees</a></li>
+      <li><a href="https://rapzilla.com/2025-07-christian-rap-song-album-drops-july-25th-listen-here/" target="_blank" rel="noopener">Rapzilla: Christian Rap Song &amp; Album Drops, July 25, 2025</a></li>
+      <li><a href="https://rapzilla.com/2026-08-christian-rap-song-album-drops-8-14-26-listen-here/" target="_blank" rel="noopener">Rapzilla: Christian Rap Song &amp; Album Drops, August 14, 2026</a></li>
+      <li><a href="https://music.apple.com/us/artist/aable/1447656013" target="_blank" rel="noopener">Apple Music: Aable</a></li>
+    </ol>
+  </section>
+</div>
